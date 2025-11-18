@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBIS - Blockchain Gaming Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FF8C42;
+            --accent: #6366F1;
+            --success: #10B981;
+            --danger: #EF4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(74, 144, 226, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 90%, rgba(255, 140, 66, 0.1) 0%, transparent 40%);
+            animation: bgMove 20s ease-in-out infinite;
+        }
+
+        @keyframes bgMove {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(74, 144, 226, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74, 144, 226, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            padding: 30px 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-symbol {
+            width: 70px;
+            height: 70px;
+            position: relative;
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+        }
+
+        .logo-outer {
+            position: absolute;
+            inset: 0;
+            border: 3px solid var(--secondary);
+            transform: rotate(45deg);
+            animation: rotateOuter 20s linear infinite;
+        }
+
+        @keyframes rotateOuter {
+            from { transform: rotate(45deg); }
+            to { transform: rotate(405deg); }
+        }
+
+        .logo-inner {
+            position: absolute;
+            inset: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            box-shadow: 0 0 30px rgba(74, 144, 226, 0.6);
+        }
+
+        .logo-text h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+        }
+
+        .logo-text p {
+            font-size: 13px;
+            color: #9CA3AF;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        #wallet-btn {
+            background: linear-gradient(135deg, var(--secondary), #FF6B35);
+            border: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.4s;
+            box-shadow: 0 10px 30px rgba(255, 140, 66, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #wallet-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        #wallet-btn:hover::before {
+            left: 100%;
+        }
+
+        #wallet-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 140, 66, 0.6);
+        }
+
+        #wallet-btn.connected {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+
+        .hero h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 72px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -2px;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            font-size: 24px;
+            color: #9CA3AF;
+            margin-bottom: 40px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-top: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--secondary);
+            display: block;
+        }
+
+        .stat-label {
+            color: #6B7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .game-section {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 60px;
+            padding: 60px 0;
+            align-items: start;
+        }
+
+        .wheel-area {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.6), rgba(26, 35, 126, 0.4));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 30px;
+            padding: 60px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        #wheel-container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            margin: 0 auto;
+        }
+
+        #wheel-pointer {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid var(--secondary);
+            z-index: 10;
+            filter: drop-shadow(0 10px 20px rgba(255, 140, 66, 0.6));
+            animation: pointerPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pointerPulse {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        #wheel-canvas {
+            border-radius: 50%;
+            box-shadow: 0 0 80px rgba(74, 144, 226, 0.6),
+                        inset 0 0 40px rgba(0, 0, 0, 0.4);
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
+        }
+
+        #spin-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), #FF6B35);
+            border: 8px solid #fff;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.4s;
+            box-shadow: 0 20px 50px rgba(255, 140, 66, 0.6);
+            z-index: 20;
+            letter-spacing: 2px;
+        }
+
+        #spin-btn:hover:not(:disabled) {
+            transform: translate(-50%, -50%) scale(1.1);
+            box-shadow: 0 25px 60px rgba(255, 140, 66, 0.8);
+        }
+
+        #spin-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .info-panels {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .panel {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.8), rgba(26, 35, 126, 0.6));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 25px;
+            padding: 35px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+
+        .panel:hover {
+            border-color: rgba(74, 144, 226, 0.6);
+            box-shadow: 0 25px 50px rgba(74, 144, 226, 0.2);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(74, 144, 226, 0.2);
+        }
+
+        .panel-icon {
+            font-size: 32px;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .balance-display {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 20px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #balance-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            color: white;
+            display: block;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .balance-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .prize-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .prize-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            transition: all 0.3s;
+        }
+
+        .prize-item:hover {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: rgba(74, 144, 226, 0.4);
+            transform: translateX(5px);
+        }
+
+        .prize-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .prize-emoji {
+            font-size: 32px;
+        }
+
+        .prize-amount {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .prize-chance {
+            color: #9CA3AF;
+            font-size: 15px;
+            padding: 6px 15px;
+            background: rgba(74, 144, 226, 0.2);
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        #result-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(74, 144, 226, 0.95));
+            backdrop-filter: blur(20px);
+            padding: 60px;
+            border-radius: 30px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            min-width: 400px;
+            transition: all 0.5s;
+        }
+
+        #result-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        #result-modal.win {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95));
+        }
+
+        #result-modal.lose {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+        }
+
+        .result-icon {
+            font-size: 100px;
+            margin-bottom: 25px;
+            animation: iconBounce 0.6s ease-out;
+        }
+
+        @keyframes iconBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .result-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .result-amount {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .info-notice {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+            border: 2px solid rgba(245, 158, 11, 0.5);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .info-notice h3 {
+            color: #F59E0B;
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .info-notice p {
+            color: #FCD34D;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 1200px) {
+            .game-section {
+                grid-template-columns: 1fr;
+            }
+
+            #wheel-container {
+                width: 400px;
+                height: 400px;
+            }
+
+            #wheel-canvas {
+                width: 400px !important;
+                height: 400px !important;
+            }
+
+            #spin-btn {
+                width: 130px;
+                height: 130px;
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h2 {
+                font-size: 48px;
+            }
+
+            .stats-bar {
+                gap: 30px;
+            }
+
+            .stat-value {
+                font-size: 36px;
+            }
+
+            #wheel-container {
+                width: 300px;
+                height: 300px;
+            }
+
+            #wheel-canvas {
+                width: 300px !important;
+                height: 300px !important;
+            }
+
+            #spin-btn {
+                width: 100px;
+                height: 100px;
+                font-size: 18px;
+            }
+
+            .wheel-area {
+                padding: 30px;
+            }
+
+            #result-modal {
+                min-width: 90%;
+                padding: 40px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="grid-overlay"></div>
+
+    <header>
+        <div class="header-content">
+            <div class="logo-container">
+                <div class="logo-symbol">
+                    <div class="logo-outer"></div>
+                    <div class="logo-inner">O</div>
+                </div>
+                <div class="logo-text">
+                    <h1>ORBIS</h1>
+                    <p>Trust Beyond Borders</p>
+                </div>
+            </div>
+            <button id="wallet-btn">Connect Wallet</button>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h2>The Future of<br>Blockchain Gaming</h2>
+            <p>Spin the wheel, test your luck, win big with ORBIS tokens</p>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-value">500</span>
+                    <span class="stat-label">Max Prize</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">10</span>
+                    <span class="stat-label">Cost Per Spin</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">87.5%</span>
+                    <span class="stat-label">Win Rate</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="info-notice">
+            <h3>⚙️ Demo Mode Active</h3>
+            <p>To activate real blockchain functionality:<br>
+            1. Create ORBIS token on CoinTool.app<br>
+            2. Deploy smart contract on BSC<br>
+            3. Update addresses in JavaScript (line 432-435)</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="game-section">
+            <div class="wheel-area">
+                <div id="wheel-container">
+                    <div id="wheel-pointer"></div>
+                    <canvas id="wheel-canvas" width="500" height="500"></canvas>
+                    <button id="spin-btn" disabled>CONNECT</button>
+                </div>
+            </div>
+
+            <div class="info-panels">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">💰</span>
+                        <h3 class="panel-title">Your Balance</h3>
+                    </div>
+                    <div class="balance-display">
+                        <span id="balance-value">0</span>
+                        <div class="balance-label">ORBIS Tokens</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">🏆</span>
+                        <h3 class="panel-title">Prize Structure</h3>
+                    </div>
+                    <div class="prize-grid">
+                        <div class="prize-item">
+                            <div class="prize-info">
+                                <span class="prize-emoji">🏆</span>
+                                <span class="prize-amount">500 ORBIS</span>
+                            </div>
+                            <span class="prize-chance">6.25%</span>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-info">
+                                <span class="prize-emoji">💎</span>
+                                <span class="prize-amount">200 ORBIS</span>
+                            </div>
+                            <span class="prize-chance">6.25%</span>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-info">
+                                <span class="prize-emoji">🥇</span>
+                                <span class="prize-amount">100 ORBIS</span>
+                            </div>
+                            <span class="prize-chance">12.5%</span>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-info">
+                                <span class="prize-emoji">🥈</span>
+                                <span class="prize-amount">50 ORBIS</span>
+                            </div>
+                            <span class="prize-chance">12.5%</span>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-info">
+                                <span class="prize-emoji">🥉</span>
+                                <span class="prize-amount">25 ORBIS</span>
+                            </div>
+                            <span class="prize-chance">12.5%</span>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-info">
+                                <span class="prize-emoji">🎁</span>
+                                <span class="prize-amount">15 ORBIS</span>
+                            </div>
+                            <span class="prize-chance">18.75%</span>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-info">
+                                <span class="prize-emoji">🪙</span>
+                                <span class="prize-amount">11 ORBIS</span>
+                            </div>
+                            <span class="prize-chance">18.75%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-modal">
+        <div class="result-icon"></div>
+        <div class="result-text"></div>
+        <div class="result-amount"></div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            tokenAddress: '0x0000000000000000000000000000000000000000',
+            gameAddress: '0x0000000000000000000000000000000000000000',
+            chainId: '0x38',
+            spinCost: '10'
+        };
+
+        const PRIZES = [
+            { label: '500', emoji: '🏆', value: 500, color: '#FFD700' },
+            { label: '11', emoji: '🪙', value: 11, color: '#4A90E2' },
+            { label: '200', emoji: '💎', value: 200, color: '#FF6B6B' },
+            { label: '15', emoji: '🎁', value: 15, color: '#4ECDC4' },
+            { label: '100', emoji: '🥇', value: 100, color: '#95E1D3' },
+            { label: 'LOSE', emoji: '❌', value: 0, color: '#2C3E50' },
+            { label: '50', emoji: '🥈', value: 50, color: '#F38181' },
+            { label: '25', emoji: '🥉', value: 25, color: '#AA96DA' }
+        ];
+
+        let web3, account, tokenContract, gameContract;
+        let isSpinning = false;
+        let rotation = 0;
+
+        const TOKEN_ABI = [
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
+            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"type":"function"},
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"}
+        ];
+
+        const GAME_ABI = [
+            {"constant":false,"inputs":[],"name":"spin","outputs":[],"type":"function"},
+            {"anonymous":false,"inputs":[{"indexed":true,"name":"player","type":"address"},{"indexed":false,"name":"prizeIndex","type":"uint256"},{"indexed":false,"name":"prizeAmount","type":"uint256"}],"name":"SpinResult","type":"event"}
+        ];
+
+        window.addEventListener('load', () => {
+            if (typeof window.ethereum !== 'undefined') {
+                web3 = new Web3(window.ethereum);
+            }
+            drawWheel();
+            document.getElementById('wallet-btn').addEventListener('click', connectWallet);
+            document.getElementById('spin-btn').addEventListener('click', spinWheel);
+        });
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('⚠️ Please install MetaMask!\n\nDownload from metamask.io');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (chainId !== CONFIG.chainId) {
+                    await switchToBSC();
+                }
+
+                if (CONFIG.tokenAddress !== '0x0000000000000000000000000000000000000000') {
+                    tokenContract = new web3.eth.Contract(TOKEN_ABI, CONFIG.tokenAddress);
+                    gameContract = new web3.eth.Contract(GAME_ABI, CONFIG.gameAddress);
+                    await updateBalance();
+                } else {
+                    document.getElementById('balance-value').textContent = '1000';
+                }
+
+                const shortAddr = account.substring(0, 6) + '...' + account.substring(38);
+                document.getElementById('wallet-btn').textContent = shortAddr;
+                document.getElementById('wallet-btn').classList.add('connected');
+                document.getElementById('spin-btn').textContent = 'SPIN';
+                document.getElementById('spin-btn').disabled = false;
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                alert('Failed to connect wallet: ' + error.message);
+            }
+        }
+
+        async function switchToBSC() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CONFIG.chainId }]
+                });
+            } catch (error) {
+                if (error.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: CONFIG.chainId,
+                            chainName: 'BNB Smart Chain',
+                            nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                            rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                            blockExplorerUrls: ['https://bscscan.com/']
+                        }]
+                    });
+                }
+            }
+        }
+
+        async function updateBalance() {
+            try {
+                const balance = await tokenContract.methods.balanceOf(account).call();
+                const formatted = parseFloat(web3.utils.fromWei(balance, 'ether')).toFixed(2);
+                document.getElementById('balance-value').textContent = formatted;
+            } catch (error) {
+                console.error('Balance error:', error);
+            }
+        }
+
+        async function spinWheel() {
+            if (isSpinning || !account) return;
+
+            isSpinning = true;
+            document.getElementById('spin-btn').textContent = 'SPINNING';
+            document.getElementById('spin-btn').disabled = true;
+            document.getElementById('spin-btn').classList.add('spinning');
+
+            try {
+                if (CONFIG.tokenAddress !== '0x0000000000000000000000000000000000000000') {
+                    const allowance = await tokenContract.methods.allowance(account, CONFIG.gameAddress).call();
+                    const spinCost = web3.utils.toWei(CONFIG.spinCost, 'ether');
+
+                    if (BigInt(allowance) < BigInt(spinCost)) {
+                        await tokenContract.methods.approve(CONFIG.gameAddress, web3.utils.toWei('1000', 'ether')).send({ from: account });
+                    }
+
+                    animateWheel();
+
+                    const tx = await gameContract.methods.spin().send({ from: account, gas: 300000 });
+
+                    if (tx.events && tx.events.SpinResult) {
+                        const prizeIndex = parseInt(tx.events.SpinResult.returnValues.prizeIndex);
+                        const prizeAmount = parseFloat(web3.utils.fromWei(tx.events.SpinResult.returnValues.prizeAmount, 'ether'));
+
+                        setTimeout(() => {
+                            showResult(prizeIndex, prizeAmount);
+                            updateBalance();
+                        }, 4000);
+                    }
+                } else {
+                    animateWheel();
+                    const randomIndex = Math.floor(Math.random() * PRIZES.length);
+                    const prize = PRIZES[randomIndex];
+
+                    setTimeout(() => {
+                        showResult(randomIndex, prize.value);
+                        const currentBalance = parseFloat(document.getElementById('balance-value').textContent);
+                        const newBalance = currentBalance - 10 + prize.value;
+                        document.getElementById('balance-value').textContent = newBalance.toFixed(2);
+                    }, 4000);
+                }
+
+            } catch (error) {
+                console.error('Spin error:', error);
+                alert('Spin failed: ' + error.message);
+            } finally {
+                setTimeout(() => {
+                    isSpinning = false;
+                    document.getElementById('spin-btn').textContent = 'SPIN';
+                    document.getElementById('spin-btn').disabled = false;
+                    document.getElementById('spin-btn').classList.remove('spinning');
+                }, 4000);
+            }
+        }
+
+        function drawWheel(currentRotation = 0) {
+            const canvas = document.getElementById('wheel-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 20;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate((currentRotation * Math.PI) / 180);
+
+            const segmentAngle = (2 * Math.PI) / PRIZES.length;
+
+            PRIZES.forEach((prize, i) => {
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
+                ctx.lineTo(0, 0);
+                ctx.fillStyle = prize.color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.rotate(i * segmentAngle + segmentAngle / 2);
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 36px Arial';
+                ctx.fillText(prize.emoji, radius - 60, 8);
+                ctx.font = 'bold 20px Arial';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 5;
+                ctx.fillText(prize.label, radius - 100, 8);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        function animateWheel() {
+            const totalRotation = 1800 + Math.random() * 360;
+            const duration = 4000;
+            const startTime = Date.now();
+
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                rotation = totalRotation * easeOut;
+
+                drawWheel(rotation);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+
+        function showResult(prizeIndex, prizeAmount) {
+            const prize = PRIZES[prizeIndex];
+            const modal = document.getElementById('result-modal');
+            const iconDiv = modal.querySelector('.result-icon');
+            const textDiv = modal.querySelector('.result-text');
+            const amountDiv = modal.querySelector('.result-amount');
+
+            iconDiv.textContent = prize.emoji;
+
+            if (prizeAmount > 0) {
+                modal.classList.add('win');
+                modal.classList.remove('lose');
+                textDiv.textContent = `You Won!`;
+                amountDiv.textContent = `+${prizeAmount} ORBIS`;
+            } else {
+                modal.classList.add('lose');
+                modal.classList.remove('win');
+                textDiv.textContent = 'Try Again!';
+                amountDiv.textContent = '-10 ORBIS';
+            }
+
+            modal.classList.add('show');
+            setTimeout(() => modal.classList.remove('show'), 5000);
+        }
+    </script>
+</body>
+</html>
