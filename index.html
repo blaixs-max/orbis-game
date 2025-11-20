@@ -3,99 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Redline: Balanced v9</title>
+    <title>Redline: Real Physics v10</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; user-select: none; -webkit-touch-callout: none; }
         
-        /* SİNEMATİK UI */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 10;
-            background: radial-gradient(circle, transparent 50%, #000 140%);
+            background: radial-gradient(circle, transparent 60%, #000 150%);
         }
         
         .hud-top { display: flex; justify-content: space-between; width: 100%; margin-top: 10px; }
-        .hud-metric { text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        .hud-metric span { display: block; font-size: 10px; letter-spacing: 2px; opacity: 0.7; }
-        .hud-metric strong { font-size: 28px; font-weight: 300; }
+        .hud-metric { text-align: center; color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.8); }
+        .hud-metric span { display: block; font-size: 12px; opacity: 0.7; letter-spacing: 1px; }
+        .hud-metric strong { font-size: 24px; }
 
-        #center-speed { text-align: center; margin-top: 50px; }
-        #speed-val { font-size: 80px; color: #fff; font-weight: 100; letter-spacing: -2px; text-shadow: 0 0 20px rgba(0,200,255,0.6); }
-        #speed-unit { font-size: 14px; color: #00ccff; letter-spacing: 5px; font-weight: bold; }
+        #center-speed { text-align: center; margin-top: 40px; }
+        #speed-val { font-size: 80px; color: #fff; font-weight: 300; text-shadow: 0 0 10px rgba(0,150,255,0.5); }
+        #speed-unit { font-size: 16px; color: #00ccff; letter-spacing: 4px; font-weight: bold; }
 
-        /* UYARI */
-        #danger-overlay {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            box-shadow: inset 0 0 100px rgba(255,0,0,0);
-            pointer-events: none; transition: box-shadow 0.5s; z-index: 5;
-        }
-
-        /* NITRO BUTONU */
+        /* NİTRO BUTONU */
         #nitro-btn {
             pointer-events: auto;
-            width: 100px; height: 100px;
+            width: 90px; height: 90px;
             position: absolute; bottom: 40px; right: 30px;
             border-radius: 50%;
-            background: rgba(0,0,0,0.3);
-            border: 2px solid rgba(255,255,255,0.3);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
             display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 14px; font-weight: bold; letter-spacing: 1px;
-            box-shadow: 0 0 20px rgba(0,255,255,0.1);
+            color: #fff; font-size: 12px; font-weight: bold; letter-spacing: 1px;
             transition: 0.2s;
         }
         #nitro-btn.active {
-            background: rgba(0,255,255,0.2);
-            box-shadow: 0 0 40px rgba(0,255,255,0.6), inset 0 0 20px rgba(0,255,255,0.4);
-            border-color: #fff; transform: scale(0.95);
+            background: rgba(0, 200, 255, 0.3); border-color: #fff;
+            box-shadow: 0 0 30px rgba(0, 200, 255, 0.6); transform: scale(0.95);
         }
 
         /* MENÜLER */
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #050505;
+            background: #080808;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             pointer-events: auto; z-index: 50;
         }
-        h1 { color: #fff; font-weight: 100; font-size: 40px; letter-spacing: 8px; margin-bottom: 10px; text-shadow: 0 0 20px #fff; }
+        h1 { color: #fff; font-weight: 100; font-size: 36px; letter-spacing: 5px; margin-bottom: 10px; }
+        p { color: #888; max-width: 300px; text-align: center; font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
+        
         button {
-            background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff;
-            padding: 15px 40px; font-size: 18px; margin: 10px; letter-spacing: 2px;
-            cursor: pointer; transition: 0.3s; text-transform: uppercase; border-radius: 4px;
+            background: transparent; border: 1px solid #fff; color: #fff;
+            padding: 15px 40px; font-size: 16px; letter-spacing: 2px;
+            cursor: pointer; transition: 0.3s; text-transform: uppercase;
         }
-        button:hover { background: #fff; color: #000; box-shadow: 0 0 20px #fff; }
+        button:hover { background: #fff; color: #000; }
+
+        /* KAZA EFEKTİ */
+        #crash-flash {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: white; opacity: 0; pointer-events: none; z-index: 100;
+            transition: opacity 0.1s;
+        }
     </style>
 </head>
 <body>
 
-    <div id="danger-overlay"></div>
+    <div id="crash-flash"></div>
 
     <div id="ui-layer" style="display:none;">
         <div class="hud-top">
-            <div class="hud-metric"><span>SKOR</span><strong id="score">0</strong></div>
+            <div class="hud-metric"><span>MESAFE</span><strong id="score">0</strong></div>
             <div class="hud-metric"><span>BAKİYE</span><strong id="gold" style="color:#ffd700">0</strong></div>
         </div>
         
         <div id="center-speed">
-            <div id="speed-val">0</div>
+            <div id="speed-val">30</div>
             <div id="speed-unit">KM/H</div>
         </div>
 
         <div id="nitro-btn" ontouchstart="activateNitro()" ontouchend="deactivateNitro()" onmousedown="activateNitro()" onmouseup="deactivateNitro()">
-            TURBO
+            GAZ
         </div>
     </div>
 
     <div id="menu" class="screen">
         <h1>REDLINE</h1>
-        <p style="color:#888; margin-bottom:30px;">BALANCED EDITION v9</p>
-        <button onclick="reqPerm()">YARIŞA BAŞLA</button>
+        <p>REALISTIC DRIVING MODE<br>Başlangıç Hızı: 30 km/h<br>Telefonu nazikçe sağa/sola yatır.</p>
+        <button onclick="reqPerm()">SÜRÜŞE BAŞLA</button>
     </div>
 
     <div id="gameover" class="screen" style="display:none;">
-        <h1 style="color:#ff3333;">KAZA!</h1>
-        <p style="color:#fff; margin-bottom:20px;">SKOR: <span id="end-score">0</span></p>
-        <button onclick="resetGame()">MENÜYE DÖN</button>
+        <h1 style="color:#ff4444;">KAZA YAPTIN</h1>
+        <p>Alınan Mesafe: <span id="end-score" style="color:#fff">0</span> metre</p>
+        <button onclick="resetGame()">TEKRAR DENE</button>
     </div>
 
     <script type="module">
@@ -104,74 +103,32 @@
         import { RenderPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-        // --- YENİ HIZ AYARLARI ---
-        const BIKE_STATS = { 
-            spd: 200,    // Max Hız düşürüldü (Eskisi 320)
-            hnd: 0.12,   // Kontrol biraz yumuşatıldı
-            nit: 1.2     // Nitro dolum hızı
+        // --- FİZİK VE OYNANIŞ AYARLARI (BURASI ÇOK ÖNEMLİ) ---
+        const SETTINGS = {
+            startSpeed: 30,      // Başlangıç hızı çok düşük
+            maxSpeed: 150,       // Normal max hız
+            nitroSpeed: 190,     // Nitro ile çıkılacak max hız
+            accel: 0.1,          // Hızlanma (Daha yavaş ve doğal)
+            steeringSens: 0.15,  // Direksiyon hassasiyeti
+            worldScale: 0.01     // Dünyanın akış hızı (Görsel hızın yarısı)
         };
 
         let scene, camera, renderer, composer;
         let player, roadParts=[], enemies=[], particles=[];
         let gameActive = false;
-        let speed=0, score=0, nitro=100;
-        let tiltX=0, playerX=0;
-        let isNitro=false;
-        
-        // Asfalt Dokusu
+        let speed = SETTINGS.startSpeed;
+        let displaySpeed = speed; // Ekranda görünen sayı (Yumuşak geçiş için)
+        let score = 0;
+        let tiltX = 0, playerX = 0;
+        let isNitro = false; // Artık "Gaz/Nitro" tuşu
+
+        // Prosedürel Asfalt
         function createAsphaltTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,512,512);
-            for(let i=0; i<40000; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#222' : '#111';
+            const c = document.createElement('canvas'); c.width=512; c.height=512;
+            const ctx = c.getContext('2d'); ctx.fillStyle='#151515'; ctx.fillRect(0,0,512,512);
+            for(let i=0;i<60000;i++){
+                ctx.fillStyle = Math.random()>0.5 ? '#1a1a1a':'#0f0f0f';
                 ctx.fillRect(Math.random()*512, Math.random()*512, 2, 2);
             }
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(1, 4); return tex;
-        }
-        const asphaltTex = createAsphaltTexture();
-
-        function init() {
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x020205, 0.02); 
-
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 3, 6);
-            camera.rotation.x = -0.25;
-
-            renderer = new THREE.WebGLRenderer({antialias:false});
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.toneMapping = THREE.ReinhardToneMapping;
-            document.body.appendChild(renderer.domElement);
-
-            // Post Processing
-            const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0; bloomPass.strength = 1.0; bloomPass.radius = 0.5;
-
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
-
-            // Işıklar
-            const hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.2);
-            scene.add(hemi);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(0, 20, -10);
-            scene.add(dirLight);
-
-            createRoad();
-            window.addEventListener('resize', onWindowResize);
-            animate();
-        }
-
-        function createPlayer() {
-            if(player) scene.remove(player);
-            player = new THREE.Group();
-
-            // Gövde
-            const bodyMat = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.2, metalness:0.8});
-            const body
+            const t = new THREE.CanvasTexture(c);
+            t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(1,4); return
