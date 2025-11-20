@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Redline: Mobile Tilt</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial Black', sans-serif; user-select: none; -webkit-touch-callout: none; }
+        
+        /* UI KATMANI */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 15px; z-index: 10;
+            box-sizing: border-box;
+        }
+        
+        .hud-top { display: flex; justify-content: space-between; width: 100%; }
+        .hud-box {
+            background: rgba(0,0,0,0.6); border-left: 4px solid #e60000;
+            padding: 8px 15px; border-radius: 4px; color: #fff;
+        }
+        .hud-box span { display: block; font-size: 10px; color: #aaa; }
+        .hud-box strong { font-size: 20px; color: #fff; }
+        
+        /* HIZ VE UYARI */
+        #center-hud {
+            text-align: center; margin-top: 20px;
+        }
+        #speed-val { font-size: 60px; color: #fff; font-style: italic; text-shadow: 2px 2px 0 #000; }
+        #speed-unit { font-size: 14px; color: #e60000; }
+        
+        #bomb-warning {
+            color: #ff0000; font-size: 24px; font-weight: bold; 
+            text-shadow: 0 0 10px #ff0000; display: none; animation: blink 0.2s infinite;
+        }
+
+        /* NİTRO BUTONU (MOBİL İÇİN) */
+        #nitro-btn {
+            pointer-events: auto;
+            width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(0,200,255,0.8) 0%, rgba(0,100,255,0.5) 100%);
+            border: 3px solid #fff; border-radius: 50%;
+            position: absolute; bottom: 30px; right: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #fff; font-size: 16px; font-weight: bold;
+            box-shadow: 0 0 20px rgba(0,200,255,0.6);
+            transition: transform 0.1s;
+            z-index: 100;
+        }
+        #nitro-btn:active { transform: scale(0.9); background: #fff; color: #00f; }
+        #nitro-fill {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: rgba(0,255,0,0.5); border-radius: 50%; pointer-events: none;
+            transition: height 0.2s;
+        }
+
+        /* MENÜLER */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #222 0%, #000 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: auto; z-index: 20; padding: 20px; text-align: center;
+        }
+        
+        /* SHOP CARD MOBİL */
+        #shop-grid { 
+            display: flex; gap: 15px; overflow-x: auto; width: 100%; padding: 10px 0;
+            scroll-behavior: smooth; align-items: stretch; 
+            -webkit-overflow-scrolling: touch;
+        }
+        .card {
+            background: #1a1a1a; border: 1px solid #444; min-width: 200px; padding: 15px;
+            border-radius: 10px; text-align: center; flex-shrink: 0;
+        }
+        .card.owned { border-color: #00cc00; }
+        .card.equipped { background: #0f220f; border-color: #00ff00; }
+        
+        button {
+            border: none; padding: 15px 0; width: 100%; font-size: 16px; font-weight: bold; 
+            margin-top: 10px; border-radius: 5px;
+        }
+        .btn-start { background: #e60000; color: white; font-size: 20px; padding: 20px; margin-bottom: 10px; box-shadow: 0 0 20px rgba(230,0,0,0.5); }
+        .btn-shop { background: #333; color: white; }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer" style="display:none;">
+        <div class="hud-top">
+            <div class="hud-box"><span>PUAN</span><strong id="score">0</strong></div>
+            <div id="center-hud">
+                <div id="speed-val">0</div>
+                <div id="speed-unit">KM/H</div>
+                <div id="bomb-warning">HIZLAN!</div>
+            </div>
+            <div class="hud-box" style="border-left-color: gold;"><span>ALTIN</span><strong id="gold" style="color:gold">0</strong></div>
+        </div>
+
+        <div id="nitro-btn" ontouchstart="activateNitro()" ontouchend="deactivateNitro()">
+            NITRO
+            <div id="nitro-fill" style="height:0%"></div>
+        </div>
+    </div>
+
+    <div id="menu" class="screen">
+        <h1 style="color:#fff; font-size:40px; margin-bottom:10px; font-style:italic;">REDLINE <br><span style="color:#e60000">MOBILE</span></h1>
+        <p style="color:#aaa; margin-bottom:30px;">Telefonu Sağa/Sola Yatır!</p>
+        <button class="btn-start" onclick="requestPermissionAndStart()">YARIŞA BAŞLA</button>
+        <button class="btn-shop" onclick="openShop()">GARAJ</button>
+    </div>
+
+    <div id="shop" class="screen" style="display:none;">
+        <h2 style="color:#fff;">GARAJ</h2>
+        <p style="color:gold;">Paran: <span id="shop-gold">0</span></p>
+        <div id="shop-grid"></div>
+        <button class="btn-shop" onclick="closeShop()">GERİ DÖN</button>
+    </div>
+
+    <div id="gameover" class="screen" style="display:none;">
+        <h1 style="color:#e60000;">KAZA!</h1>
+        <h2 style="color:#fff;">SKOR: <span id="end-score">0</span></h2>
+        <h3 style="color:gold;">KAZANÇ: +<span id="end-gold">0</span></h3>
+        <button class="btn-start" onclick="closeGameOver()">MENÜ</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- AYARLAR & VERİ ---
+        let saveData = JSON.parse(localStorage.getItem('redlineMobileSave')) || { gold: 1000, owned: ['junk'], equipped: 'junk' };
+        
+        const BIKES = [
+            { id: 'junk', name: 'HURDA', cost: 0, stats: {spd:300, hnd:0.08, nit:1.0}, color:0x8B4513 },
+            { id: 'sport', name: 'GT RACER', cost: 1500, stats: {spd:400, hnd:0.15, nit:1.5}, color:0x0044ff },
+            { id: 'neon', name: 'TRON', cost: 5000, stats: {spd:500, hnd:0.25, nit:2.0}, color:0x00ff00 },
+            { id: 'gold', name: 'EMPEROR', cost: 10000, stats: {spd:600, hnd:0.35, nit:3.0}, color:0xffd700 }
+        ];
+
+        let scene, camera, renderer;
+        let player, roadLines=[], enemies=[], particles=[];
+        let gameActive = false;
+        let speed=0, score=0, nitro=0;
+        let tiltX = 0; // Telefondan gelen eğim verisi
+        let playerX = 0; // Oyuncunun anlık konumu
+        let isNitroPressed = false;
+
+        // --- BAŞLATMA ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.025);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3.5, 6);
+            camera.rotation.x = -0.3;
+
+            renderer = new THREE.WebGLRenderer({antialias:true});
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Işıklar
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+            dl.position.set(0, 10, 0);
+            scene.add(dl);
+
+            // Zemin
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 400), new THREE.MeshStandardMaterial({color:0x111111, roughness:0.8}));
+            floor.rotation.x = -Math.PI/2; floor.position.z = -100;
+            scene.add(floor);
+
+            createRoadLines();
+            updateUI();
+            animate();
+        }
+
+        // --- İZİN & KONTROL (HAYATİ KISIM) ---
+        function requestPermissionAndStart() {
+            // iOS 13+ için izin istemek zorunludur
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            startGame();
+                        } else {
+                            alert("Sensör izni verilmedi! Oyun tuşlarla çalışacak.");
+                            startGame(); // İzin yoksa yine de başlat (PC'de test için)
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Android veya eski cihazlar (Otomatik çalışır)
+                startGame();
+            }
+        }
+
+        function handleOrientation(event) {
+            if(!gameActive) return;
+            // Gamma: Telefonun sağa sola yatması (-90 ile 90 arası)
+            // Hassasiyeti artırmak için 2 ile çarpabiliriz.
+            let g = event.gamma; 
+            if(g > 40) g = 40; // Sınırla
+            if(g < -40) g = -40;
+            
+            // Yumuşak geçiş (Smoothing)
+            tiltX = g * 0.3; // -12 ile +12 arası değer üretir (Şerit genişliği için uygun)
+        }
+        
+        // PC'de Test İçin Klavye Desteği (Fallback)
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'ArrowLeft') tiltX = -8;
+            if(e.key === 'ArrowRight') tiltX = 8;
+            if(e.key === ' ') activateNitro();
+        });
+        document.addEventListener('keyup', (e) => {
+            if(e.key === 'ArrowLeft' || e.key === 'ArrowRight') tiltX = 0;
+            if(e.key === ' ') deactivateNitro();
+        });
+
+        window.addEventListener('deviceorientation', handleOrientation);
+
+        // --- OYUN MANTIĞI ---
+        function startGame() {
+            document.getElementById('menu').style.display='none';
+            document.getElementById('ui-layer').style.display='flex';
+            
+            speed=150; score=0; nitro=0; gameActive=true; playerX=0; tiltX=0;
+            enemies.forEach(e=>scene.remove(e)); enemies=[];
+
+            createPlayer();
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(!gameActive) return;
+
+            const stats = BIKES.find(b=>b.id===saveData.equipped).stats;
+
+            // Hızlanma ve Nitro
+            let targetSpeed = stats.spd;
+            if(isNitroPressed && nitro > 0) {
+                targetSpeed += 100;
+                nitro -= 0.5; // Nitro harca
+                if(Math.random()>0.5) spawnParticle();
+            } else {
+                if(nitro < 100) nitro += 0.1 * stats.nit; // Nitro dolsun
+            }
+            
+            // Hız geçişi
+            speed += (targetSpeed - speed) * 0.02;
+            score += Math.floor(speed/100);
+
+            // UI Güncelleme
+            document.getElementById('speed-val').innerText = Math.floor(speed);
+            document.getElementById('score').innerText = score;
+            document.getElementById('nitro-fill').style.height = nitro + "%";
+            
+            if(speed < 100) gameOver();
+            if(speed < 110) document.getElementById('bomb-warning').style.display='block';
+            else document.getElementById('bomb-warning').style.display='none';
+
+            // HAREKET SİSTEMİ (TILT)
+            // playerX hedefe (tiltX) doğru yumuşakça gider (Lerp)
+            playerX += (tiltX - playerX) * stats.hnd; 
+            player.position.x = playerX;
+            player.rotation.z = -playerX * 0.15; // Motor yatışı
+            camera.position.x = playerX * 0.5; // Kamera da hafifçe takip etsin
+            camera.rotation.z = -playerX * 0.05; // Kamera da yatsın (Action hissi)
+
+            // Yol Akışı
+            const delta = speed * 0.02;
+            roadLines.forEach(l => {
+                l.position.z += delta;
+                if(l.position.z > 10) l.position.z -= 100;
+            });
+
+            // Düşmanlar
+            if(Math.random() < 0.03) spawnEnemy();
+            for(let i=enemies.length-1; i>=0; i--) {
+                let e = enemies[i];
+                e.position.z += delta - (e.speedOffset || 0.5); // Bağıl hız
+                
+                // Çarpışma
+                if(Math.abs(e.position.z - player.position.z) < 2.5 && Math.abs(e.position.x - player.position.x) < 1.5) {
+                    gameOver();
+                }
+
+                if(e.position.z > 15) { scene.remove(e); enemies.splice(i,1); }
+            }
+
+            // Parçacıklar
+            updateParticles();
+            
+            renderer.render(scene, camera);
+        }
+
+        // --- MODEL VE NESNELER ---
+        function createPlayer() {
+            if(player) scene.remove(player);
+            player = new THREE.Group();
+            const bikeData = BIKES.find(b=>b.id===saveData.equipped);
+            
+            // Basit Motor Gövdesi
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 2), new THREE.MeshStandardMaterial({color: bikeData.color}));
+            body.position.y = 0.6;
+            player.add(body);
+            
+            // Tekerlek
+            const wMat = new THREE.MeshBasicMaterial({color:0x222});
+            const wGeo = new THREE.CylinderGeometry(0.3,0.3,0.2,16);
+            const w1=new THREE.Mesh(wGeo,wMat); w1.rotation.z=Math.PI/2; w1.position.set(0,0.3,0.8);
+            const w2=new THREE.Mesh(wGeo,wMat); w2.rotation.z=Math.PI/2; w2.position.set(0,0.3,-0.8);
+            player.add(w1); player.add(w2);
+
+            scene.add(player);
+        }
+
+        function createRoadLines() {
+            const geo = new THREE.BoxGeometry(0.2, 0.1, 5);
+            const mat = new THREE.MeshBasicMaterial({color:0xffffff});
+            for(let i=0; i<20; i++) {
+                const l1=new THREE.Mesh(geo,mat); l1.position.set(-3,0.1,-i*10); scene.add(l1); roadLines.push(l1);
+                const l2=new THREE.Mesh(geo,mat); l2.position.set(3,0.1,-i*10); scene.add(l2); roadLines.push(l2);
+            }
+        }
+
+        function spawnEnemy() {
+            const lane = (Math.random()*10)-5; // Rastgele x konumu (-5 ile 5 arası)
+            const grp = new THREE.Group();
+            
+            // Rastgele Araç Tipi
+            const r = Math.random();
+            let col = 0xffffff;
+            let spd = 0.5;
+            let sizeZ = 3;
+            
+            if(r<0.4) { col=0xffff00; spd=0.8; } // Taksi
+            else if(r<0.7) { col=0x0000ff; spd=0.6; } // Minibüs
+            else { col=0xff0000; spd=0.4; sizeZ=6; } // Tır
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1, sizeZ), new THREE.MeshStandardMaterial({color:col}));
+            body.position.y=0.5;
+            grp.add(body);
+            
+            // Stop Lambası
+            const l = new THREE.Mesh(new THREE.BoxGeometry(1.4,0.2,0.1), new THREE.MeshBasicMaterial({color:0xff0000}));
+            l.position.set(0,0.8,sizeZ/2);
+            grp.add(l);
+
+            grp.position.set(lane, 0, -150);
+            grp.speedOffset = spd;
+            
+            scene.add(grp);
+            enemies.push(grp);
+        }
+
+        // --- EFEKTLER ---
+        function spawnParticle() {
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), new THREE.MeshBasicMaterial({color:0x00ffff}));
+            p.position.set(player.position.x+(Math.random()-0.5)*0.5, 0.5, player.position.z+1.5);
+            scene.add(p);
+            particles.push({mesh:p, life:1.0});
+        }
+        function updateParticles() {
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i];
+                p.mesh.position.z += 1; 
+                p.life -= 0.1; p.mesh.scale.setScalar(p.life);
+                if(p.life<=0) { scene.remove(p.mesh); particles.splice(i,1); }
+            }
+        }
+        
+        function activateNitro() { isNitroPressed = true; document.getElementById('nitro-btn').style.transform = "scale(0.9)"; }
+        function deactivateNitro() { isNitroPressed = false; document.getElementById('nitro-btn').style.transform = "scale(1)"; }
+
+        // --- SİSTEM ---
+        function gameOver() {
+            gameActive=false;
+            const earned = Math.floor(score/50);
+            saveData.gold += earned;
+            localStorage.setItem('redlineMobileSave', JSON.stringify(saveData));
+            document.getElementById('ui-layer').style.display='none';
+            document.getElementById('gameover').style.display='flex';
+            document.getElementById('end-score').innerText=score;
+            document.getElementById('end-gold').innerText=earned;
+        }
+        function closeGameOver() {
+            document.getElementById('gameover').style.display='none';
+            document.getElementById('menu').style.display='flex';
+            updateUI();
+        }
+        
+        // SHOP KODLARI (Basitleştirilmiş)
+        function openShop() { document.getElementById('menu').style.display='none'; document.getElementById('shop').style.display='flex'; renderShop(); }
+        function closeShop() { document.getElementById('shop').style.display='none'; document.getElementById('menu').style.display='flex'; updateUI(); }
+        function renderShop() {
+            const grid = document.getElementById('shop-grid'); grid.innerHTML='';
+            BIKES.forEach(b => {
+                const div = document.createElement('div');
+                const owned = saveData.owned.includes(b.id);
+                const equip = saveData.equipped === b.id;
+                div.className = `card ${owned?'owned':''} ${equip?'equipped':''}`;
+                div.innerHTML = `<h3>${b.name}</h3><p>${b.cost}</p><button onclick="buy('${b.id}')">${equip?'SEÇİLİ':(owned?'SEÇ':'AL')}</button>`;
+                grid.appendChild(div);
+            });
+        }
+        window.buy = function(id) {
+            const b=BIKES.find(x=>x.id===id);
+            if(saveData.owned.includes(id)) { saveData.equipped=id; }
+            else if(saveData.gold>=b.cost) { saveData.gold-=b.cost; saveData.owned.push(id); saveData.equipped=id; }
+            localStorage.setItem('redlineMobileSave', JSON.stringify(saveData)); renderShop();
+        }
+        function updateUI() { document.getElementById('shop-gold').innerText=saveData.gold; }
+
+        init();
+    </script>
+</body>
+</html>
